@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RA 리포트 취합 및 비교 시스템</title>
+    <title>증권사 리포트 원페이퍼 분석기</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         /* Gemini가 출력하는 마크다운 테이블 및 결과물 스타일링 */
@@ -12,12 +12,12 @@
         .report-content p { margin-bottom: 0.5rem; line-height: 1.5; color: #334155; font-size: 0.9rem; }
         .report-content ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; font-size: 0.9rem; }
         .report-content li { margin-bottom: 0.25rem; color: #334155; }
-        
+
         /* 증권사별 비교 표 스타일 */
         .report-content table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; }
         .report-content th, .report-content td { border: 1px solid #cbd5e1; padding: 0.4rem; text-align: left; }
         .report-content th { background-color: #f8fafc; font-weight: 600; color: #1e293b; }
-        
+
         /* 인쇄 시 A4 세로 1장 최적화 설정 */
         @media print {
             body { background: white; padding: 0; margin: 0; }
@@ -34,45 +34,91 @@
 <body class="bg-slate-100 font-sans min-h-screen py-8 px-4">
 
     <div class="max-w-7xl mx-auto">
+
+        <!-- ===== 상단 타이틀 & 소개 ===== -->
+        <header class="no-print mb-6 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="h-1.5 bg-gradient-to-r from-blue-900 via-blue-700 to-sky-500"></div>
+            <div class="p-6 sm:p-7">
+                <p class="text-xs font-semibold tracking-widest text-blue-700 uppercase mb-1">AI 리서치 어시스턴트</p>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900">증권사 리포트 원페이퍼 분석기</h1>
+                <p class="mt-2 text-sm sm:text-[15px] leading-relaxed text-slate-600 max-w-3xl">
+                    여러 증권사의 종목 리포트를 한 번에 올리면, <span class="font-semibold text-slate-700">공통된 투자 의견</span>과
+                    <span class="font-semibold text-slate-700">증권사별 관점 차이</span>, 그리고
+                    <span class="font-semibold text-slate-700">분기별 영업이익 전망</span>까지 A4 한 장으로 정리해 드려요.
+                </p>
+            </div>
+        </header>
+
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            
+
+            <!-- ===== 왼쪽 컨트롤 패널 ===== -->
             <div class="lg:col-span-1 space-y-4 no-print">
+
+                <!-- 분석 입력 카드 -->
                 <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <h2 class="text-lg font-bold text-slate-800 mb-4">⚙️ 시스템 설정</h2>
-                    
-                    <div class="mb-4">
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Gemini API Key</label>
-                        <input type="password" id="apiKey" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="AI Studio 키 입력">
+                    <h2 class="text-lg font-bold text-slate-800">📊 새 분석 만들기</h2>
+                    <p class="text-xs text-slate-500 mt-1 mb-4">종목과 리포트를 넣으면 원페이퍼로 정리해 드려요.</p>
+
+                    <!-- Gemini 연결 (최초 1회) -->
+                    <div class="mb-4 bg-slate-50 border border-slate-200 rounded-lg p-3">
+                        <label for="apiKey" class="block text-xs font-semibold text-slate-600 mb-1">Gemini API 키</label>
+                        <input type="password" id="apiKey" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="AI Studio API 키 붙여넣기">
+                        <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">AI Studio에서 발급받은 키를 넣어주세요. 키는 이 브라우저에서만 쓰이고 서버에 저장되지 않아요.</p>
                     </div>
 
+                    <div class="border-t border-slate-100 my-4"></div>
+
+                    <!-- ① 종목명 -->
                     <div class="mb-4">
-                        <label class="block text-xs font-semibold text-slate-600 mb-2">증권사 리포트 업로드 (복수 선택 가능)</label>
+                        <label for="stockName" class="block text-xs font-semibold text-slate-600 mb-1">① 분석할 종목</label>
+                        <input type="text" id="stockName" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="예: 삼성전자 (또는 종목코드)">
+                        <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">어떤 종목의 리포트를 정리할지 알려주세요.</p>
+                    </div>
+
+                    <!-- ② 리포트 업로드 -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-semibold text-slate-600 mb-2">② 증권사 리포트 업로드</label>
                         <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition">
                             <div class="flex flex-col items-center justify-center pt-4 pb-4 text-center px-2">
                                 <svg class="w-6 h-6 mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                                <p id="fileStatus" class="text-xs text-slate-500"><span class="font-semibold">파일들을 선택하세요</span></p>
+                                <p id="fileStatus" class="text-xs text-slate-500"><span class="font-semibold">PDF 파일을 선택하세요</span><br><span class="text-[11px] text-slate-400">여러 개를 한 번에 올릴 수 있어요</span></p>
                             </div>
                             <input id="fileInput" type="file" accept="application/pdf" multiple class="hidden" />
                         </label>
+                        <p class="text-[11px] text-slate-400 mt-1.5 leading-snug">리포트가 많을수록 관점 비교가 정확해져요.</p>
                     </div>
 
-                    <button id="analyzeBtn" class="w-full bg-slate-900 text-white font-medium py-2.5 px-4 rounded-lg hover:bg-slate-800 transition shadow-sm disabled:bg-slate-300 disabled:cursor-not-allowed">
-                        원페이퍼 분석 생성
+                    <!-- ③ 생성 버튼 -->
+                    <button id="analyzeBtn" class="w-full bg-blue-900 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-blue-800 transition shadow-sm disabled:bg-slate-300 disabled:cursor-not-allowed">
+                        ③ 원페이퍼 분석 생성
                     </button>
                 </div>
 
+                <!-- 인쇄 버튼 -->
                 <button id="printBtn" class="w-full bg-white border border-slate-300 text-slate-700 font-medium py-2 px-4 rounded-lg hover:bg-slate-50 transition shadow-sm hidden flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                     A4 원페이퍼 인쇄 / PDF 저장
                 </button>
+
+                <!-- ===== 지난 분석 기록 (아카이브) ===== -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <h2 class="text-base font-bold text-slate-800">📂 지난 분석 기록</h2>
+                        <button id="clearHistoryBtn" class="text-[11px] text-slate-400 hover:text-red-500 transition hidden">전체 지우기</button>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mb-3">클릭하면 이전 결과를 다시 볼 수 있어요.</p>
+                    <div id="historyList" class="space-y-2"></div>
+                </div>
+
             </div>
 
+            <!-- ===== 오른쪽 결과 영역 ===== -->
             <div class="lg:col-span-3">
                 <div class="print-area bg-white p-8 rounded-xl shadow-sm border border-slate-200 min-h-[842px] flex flex-col justify-between">
-                    
+
                     <div id="reportOutput" class="report-content flex-1 text-slate-400 flex flex-col items-center justify-center text-center">
                         <svg class="w-16 h-16 mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        <p class="text-slate-500 font-medium">분석할 증권사 리포트 PDF 파일들을 업로드한 뒤<br>'원페이퍼 분석 생성' 버튼을 눌러주세요.</p>
+                        <p class="text-slate-500 font-medium">왼쪽에서 종목명을 적고 증권사 리포트 PDF를 올린 뒤<br>'원페이퍼 분석 생성'을 눌러 보세요.</p>
                     </div>
 
                 </div>
@@ -82,9 +128,96 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
+
     <script>
         let uploadedFiles = [];
+        const HISTORY_KEY = 'kisai_analysis_history';
+
+        // ===== 히스토리 저장소 헬퍼 (localStorage, 실패해도 앱이 죽지 않도록 방어) =====
+        function loadHistory() {
+            try {
+                return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+        function saveHistory(list) {
+            try {
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+            } catch (e) {
+                /* 저장이 막힌 환경(사생활 모드 등)에서는 이번 세션에서만 유지됨 */
+            }
+        }
+        function addHistoryItem(name, markdown) {
+            const list = loadHistory();
+            list.unshift({
+                id: Date.now().toString(),
+                name: name || '(종목 미지정)',
+                date: new Date().toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                md: markdown
+            });
+            saveHistory(list.slice(0, 20)); // 최근 20건까지 보관
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const listEl = document.getElementById('historyList');
+            const clearBtn = document.getElementById('clearHistoryBtn');
+            const list = loadHistory();
+
+            if (list.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center">아직 저장된 기록이 없어요.<br>첫 분석을 만들어 보세요.</p>`;
+                clearBtn.classList.add('hidden');
+                return;
+            }
+
+            clearBtn.classList.remove('hidden');
+            listEl.innerHTML = list.map(item => `
+                <div class="group flex items-center justify-between gap-2 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50 transition">
+                    <button data-load="${item.id}" class="flex-1 text-left min-w-0">
+                        <span class="block text-sm font-medium text-slate-700 truncate">${escapeHtml(item.name)}</span>
+                        <span class="block text-[11px] text-slate-400">${item.date}</span>
+                    </button>
+                    <button data-del="${item.id}" title="삭제" class="text-slate-300 hover:text-red-500 transition text-sm px-1 shrink-0">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        // 히스토리 클릭(불러오기 / 삭제) 위임 처리
+        document.getElementById('historyList').addEventListener('click', (e) => {
+            const loadId = e.target.closest('[data-load]')?.getAttribute('data-load');
+            const delId = e.target.closest('[data-del]')?.getAttribute('data-del');
+
+            if (loadId) {
+                const item = loadHistory().find(x => x.id === loadId);
+                if (item) showReport(item.md);
+            } else if (delId) {
+                saveHistory(loadHistory().filter(x => x.id !== delId));
+                renderHistory();
+            }
+        });
+
+        document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+            if (confirm('저장된 분석 기록을 모두 지울까요?')) {
+                saveHistory([]);
+                renderHistory();
+            }
+        });
+
+        // 결과를 화면에 그리는 공통 함수
+        function showReport(markdownText) {
+            const outputDiv = document.getElementById('reportOutput');
+            outputDiv.classList.remove('text-slate-400');
+            outputDiv.innerHTML = marked.parse(markdownText);
+            document.getElementById('printBtn').classList.remove('hidden');
+            outputDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
 
         // 파일 선택 처리 (다중 파일 대응)
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -93,7 +226,7 @@
             if (uploadedFiles.length > 0) {
                 statusText.innerHTML = `<span class="text-blue-600 font-bold">${uploadedFiles.length}개의 리포트</span>가 선택됨`;
             } else {
-                statusText.innerText = "파일들을 선택하세요";
+                statusText.innerHTML = `<span class="font-semibold">PDF 파일을 선택하세요</span><br><span class="text-[11px] text-slate-400">여러 개를 한 번에 올릴 수 있어요</span>`;
             }
         });
 
@@ -103,14 +236,16 @@
         // 핵심 실행 로직
         document.getElementById('analyzeBtn').addEventListener('click', async () => {
             const apiKey = document.getElementById('apiKey').value.trim();
+            const stockName = document.getElementById('stockName').value.trim();
             const outputDiv = document.getElementById('reportOutput');
             const printBtn = document.getElementById('printBtn');
 
-            if (!apiKey) { alert('Gemini API Key를 입력해주세요.'); return; }
+            if (!apiKey) { alert('Gemini API 키를 먼저 입력해주세요.'); return; }
+            if (!stockName) { alert('분석할 종목명을 입력해주세요.'); document.getElementById('stockName').focus(); return; }
             if (uploadedFiles.length === 0) { alert('최소 1개 이상의 PDF 리포트 파일을 선택해주세요.'); return; }
 
             outputDiv.classList.remove('text-slate-400');
-            outputDiv.innerHTML = `<div class="text-slate-600 text-center py-32 font-medium animate-pulse">📚 복수의 리포트 PDF 분석 및 중간값 연산 중입니다...<br><span class="text-xs text-slate-400">잠시만 기다려주세요 (약 10~20초 소요)</span></div>`;
+            outputDiv.innerHTML = `<div class="text-slate-600 text-center py-32 font-medium animate-pulse">📚 <span class="font-bold">${escapeHtml(stockName)}</span> 리포트 분석 및 중간값 연산 중입니다...<br><span class="text-xs text-slate-400">잠시만 기다려주세요 (약 10~20초 소요)</span></div>`;
 
             try {
                 // 1. 모든 PDF 파일을 Base64 파트로 변환
@@ -124,10 +259,10 @@
                     };
                 }));
 
-                // 2. 유저가 제공한 완벽한 젬(Gem) 지시문 주입
+                // 2. RA 지시문 (사용자가 입력한 종목명을 분석 기준으로 주입)
                 const promptInstruction = `
 너는 국내 증권사 리서치를 취합·비교하는 RA(리서치 어시스턴트)다.
-첨부된 여러 증권사의 종목 리포트 PDF를 모두 읽고, 아래 규칙에 정확히 맞추어 가독성 높은 마크다운(Markdown) 보고서로 출력하라. 최종 인쇄 시 A4 세로 1장 분량을 넘기지 않도록 군더더기 없이 압축하여 작성하라.
+사용자가 지정한 분석 대상 종목명은 "${stockName}"이다. 이 종목을 기준으로, 첨부된 여러 증권사의 종목 리포트 PDF를 모두 읽고, 아래 규칙에 정확히 맞추어 가독성 높은 마크다운(Markdown) 보고서로 출력하라. 최종 인쇄 시 A4 세로 1장 분량을 넘기지 않도록 군더더기 없이 압축하여 작성하라.
 
 [입력 데이터 처리]
 - 각 PDF에서 증권사명, 발행일, 투자의견, 목표주가, 분기별 영업이익 추정치, 핵심 논거, 리스크를 추출할 것.
@@ -178,19 +313,18 @@
                 });
 
                 const result = await response.json();
-                
+
                 if (result.candidates && result.candidates[0].content.parts[0].text) {
                     const markdownText = result.candidates[0].content.parts[0].text;
-                    // 마크다운 파싱 및 주입
-                    outputDiv.innerHTML = marked.parse(markdownText);
-                    printBtn.classList.remove('hidden'); // 완성 시 인쇄 버튼 활성화
+                    showReport(markdownText);              // 결과 표시
+                    addHistoryItem(stockName, markdownText); // 히스토리에 저장
                 } else {
-                    throw new Error("분석 결과 데이터를 가져오지 못했습니다. API Key나 파일을 확인하세요.");
+                    throw new Error("분석 결과 데이터를 가져오지 못했습니다. API 키나 파일을 확인하세요.");
                 }
 
             } catch (error) {
                 console.error(error);
-                outputDiv.innerHTML = `<div class="text-red-500 text-center py-20 font-medium">❌ 에러가 발생했습니다.<br><span class="text-xs">${error.message}</span></div>`;
+                outputDiv.innerHTML = `<div class="text-red-500 text-center py-20 font-medium">문제가 생겼어요.<br><span class="text-xs">${escapeHtml(error.message)}</span><br><span class="text-xs text-slate-400 mt-1 inline-block">API 키와 PDF 파일을 확인한 뒤 다시 시도해 주세요.</span></div>`;
             }
         });
 
@@ -203,6 +337,9 @@
                 reader.onerror = error => reject(error);
             });
         }
+
+        // 최초 로드 시 히스토리 렌더링
+        renderHistory();
     </script>
 </body>
 </html>
